@@ -25,6 +25,7 @@ jobs:
       - name: Executar rastreador
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_BOT_TOKEN: ${{ secrets.DISCORD_BOT_TOKEN }}
         run: python tracker.py
 
       - name: Salvar estado dos itens
