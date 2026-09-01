@@ -2,18 +2,10 @@ import os
 import json
 import requests
 
-DISCORD_SHOP_URL = "https://discord.com/api/v9/collectibles-categories"
+# Espelho público e atualizado da loja do Discord (sem bloqueio de bot/403)
+SHOP_DATA_URL = "https://raw.githubusercontent.com/discord-datamining/discord-datamining/master/collectibles.json"
 WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
-BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 CACHE_FILE = "known_skus.json"
-
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Accept": "*/*",
-}
-
-if BOT_TOKEN:
-    HEADERS["Authorization"] = f"Bot {BOT_TOKEN.strip()}"
 
 def run():
     known_skus = set()
@@ -29,7 +21,7 @@ def run():
     first_run = len(known_skus) == 0
 
     try:
-        res = requests.get(DISCORD_SHOP_URL, headers=HEADERS, timeout=15)
+        res = requests.get(SHOP_DATA_URL, timeout=15)
         print(f"Status da resposta: {res.status_code}")
         
         if res.status_code != 200:
@@ -37,13 +29,7 @@ def run():
             return
 
         data = res.json()
-        
-        if isinstance(data, list):
-            categories = data
-        elif isinstance(data, dict):
-            categories = data.get("categories", data.get("products", []))
-        else:
-            categories = []
+        categories = data.get("categories", []) if isinstance(data, dict) else data
 
     except Exception as e:
         print(f"Exceção ao consultar API: {e}")
@@ -54,10 +40,10 @@ def run():
 
     for cat in categories:
         cat_name = cat.get("name", "Geral")
-        products = cat.get("products", [cat] if "sku_id" in cat else [])
+        products = cat.get("products", [])
         
         for prod in products:
-            sku_id = prod.get("sku_id")
+            sku_id = str(prod.get("sku_id", prod.get("id", "")))
             name = prod.get("name", "Sem Nome")
             summary = prod.get("summary", "")
             
@@ -68,21 +54,24 @@ def run():
 
     print(f"Total de SKUs encontrados: {len(current_skus)}")
 
+    # Envia notificação apenas se houver itens novos
     if WEBHOOK_URL and new_items:
         for name, summary, cat_name, sku_id in new_items:
             payload = {
                 "embeds": [{
-                    "title": f"🛍️ Novo Item na Loja: {name}",
-                    "description": summary or "Novo banner/item disponível!",
+                    "title": f"🛍️ Novo Item na Loja do Discord: {name}",
+                    "description": summary or "Novo banner/item disponível na loja!",
                     "color": 5793266,
                     "fields": [
                         {"name": "Categoria", "value": cat_name, "inline": True},
                         {"name": "SKU", "value": f"`{sku_id}`", "inline": True}
-                    ]
+                    ],
+                    "footer": {"text": "Discord Shop Tracker"}
                 }]
             }
             requests.post(WEBHOOK_URL, json=payload)
 
+    # Salva o arquivo de estado
     if current_skus:
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(list(current_skus), f, indent=2)
