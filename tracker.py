@@ -2,16 +2,18 @@ import os
 import json
 import requests
 
-# Endpoint da loja do Discord
 DISCORD_SHOP_URL = "https://discord.com/api/v9/collectibles-categories"
 WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
+BOT_TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 CACHE_FILE = "known_skus.json"
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
     "Accept": "*/*",
-    "Accept-Language": "pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7"
 }
+
+if BOT_TOKEN:
+    HEADERS["Authorization"] = f"Bot {BOT_TOKEN.strip()}"
 
 def run():
     known_skus = set()
@@ -27,8 +29,7 @@ def run():
     first_run = len(known_skus) == 0
 
     try:
-        # Consulta com parâmetros de país
-        res = requests.get(DISCORD_SHOP_URL, headers=HEADERS, params={"country_code": "BR"}, timeout=15)
+        res = requests.get(DISCORD_SHOP_URL, headers=HEADERS, timeout=15)
         print(f"Status da resposta: {res.status_code}")
         
         if res.status_code != 200:
@@ -37,7 +38,6 @@ def run():
 
         data = res.json()
         
-        # Suporta retorno direto como lista ou dentro de objeto {"categories": [...]}
         if isinstance(data, list):
             categories = data
         elif isinstance(data, dict):
@@ -68,7 +68,6 @@ def run():
 
     print(f"Total de SKUs encontrados: {len(current_skus)}")
 
-    # Dispara alerta se houver novidade
     if WEBHOOK_URL and new_items:
         for name, summary, cat_name, sku_id in new_items:
             payload = {
@@ -84,7 +83,6 @@ def run():
             }
             requests.post(WEBHOOK_URL, json=payload)
 
-    # Só sobrescreve se realmente encontrou itens para não zerar o arquivo
     if current_skus:
         with open(CACHE_FILE, "w", encoding="utf-8") as f:
             json.dump(list(current_skus), f, indent=2)
