@@ -17,7 +17,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - run: pip install soundcloud
+      - run: pip install soundcloud-v2
       
       - name: Gerar JSON da Vitrine
         run: python gerar_vitrine.py
