@@ -1,70 +1,96 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DK & Friends - Radar</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-<!-- Ícone da guia no Chrome -->
-<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
-
-<style>
-  body {
-    /* Mude 'fundo.jpg' para o nome exato da imagem que subir no repositório */
-    background-image: url('fundo.jpg');
-    background-size: cover;
-    background-attachment: fixed;
-    background-position: center;
-    background-color: rgba(17, 24, 39, 0.93); /* Fundo base quase preto */
-    background-blend-mode: multiply; /* Escurece a imagem para dar foco aos players */
-  }
-</style>
-    
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vitrine Local - Lançamentos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Ícone da guia no Chrome -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
+  
+  <style>
+    body {
+      /* Certifique-se de salvar a imagem com este nome exato na raiz do repositório */
+      background-image: url('fundo.jpg');
+      background-size: cover;
+      background-attachment: fixed;
+      background-position: center;
+      background-color: rgba(17, 24, 39, 0.93); /* Fundo base escuro */
+      background-blend-mode: multiply; /* Escurece a imagem para dar foco aos players */
+    }
+  </style>
 </head>
-<body class="bg-gray-900 text-white min-h-screen p-8">
-    <div class="max-w-5xl mx-auto">
-        <h1 class="text-4xl font-bold text-center mb-2 text-orange-500">Vitrine local</h1>
-        <p class="text-center text-gray-400 mb-8">Últimos lançamentos.</p>
+<body class="text-white min-h-screen py-10 font-sans">
+  
+  <!-- Cabeçalho -->
+  <div class="max-w-7xl mx-auto px-4 mb-8">
+    <h1 class="text-4xl font-bold text-center mb-2 text-orange-500">Vitrine Local</h1>
+    <p class="text-center text-gray-400">Últimos lançamentos da crew de Blumenau e região.</p>
+  </div>
+
+  <!-- Botão de Alternância de Layout -->
+  <div class="flex justify-end max-w-4xl mx-auto w-full px-4 mb-4 transition-all" id="toggle-wrapper">
+    <button id="btn-toggle" class="bg-gray-800 hover:bg-gray-700 border border-gray-600 text-gray-300 text-sm py-2 px-4 rounded shadow transition-colors">
+      Alternar Visualização
+    </button>
+  </div>
+
+  <!-- Container Principal (Inicia em Modo Lista) -->
+  <div id="container-vitrine" class="flex flex-col max-w-4xl mx-auto space-y-6 w-full px-4">
+    <!-- Os iframes do SoundCloud serão injetados aqui via JavaScript -->
+  </div>
+
+  <script>
+    // 1. Lógica para carregar e renderizar os cards dinamicamente
+    async function carregarVitrine() {
+      try {
+        const response = await fetch('vitrine.json');
+        const data = await response.json();
+        const container = document.getElementById('container-vitrine');
         
-        <div id="vitrine-container" class="flex flex-col max-w-4xl mx-auto space-y-6 w-full">
-            <p class="text-center text-gray-500 col-span-full">Carregando os graves...</p>
-        </div>
-    </div>
+        container.innerHTML = ''; 
+        
+        data.forEach(item => {
+          if(item.url) {
+            const encodedUrl = encodeURIComponent(item.url);
+            const iframeHTML = `
+              <div class="bg-gray-800/80 p-4 rounded-lg shadow-lg border border-gray-700 backdrop-blur-sm">
+                <h2 class="text-xl font-semibold mb-1">${item.artista}</h2>
+                <p class="text-sm text-gray-400 mb-4">Lançamento: ${item.data}</p>
+                <iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" 
+                  src="https://w.soundcloud.com/player/?url=${encodedUrl}&color=%23f97316&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false">
+                </iframe>
+              </div>
+            `;
+            container.innerHTML += iframeHTML;
+          }
+        });
+      } catch (error) {
+        console.error('Erro ao carregar o arquivo vitrine.json:', error);
+        document.getElementById('container-vitrine').innerHTML = '<p class="text-center text-red-500">Erro ao carregar as músicas. Verifique se o vitrine.json existe e está formatado corretamente.</p>';
+      }
+    }
 
-    <script>
-        async function carregarVitrine() {
-            try {
-                // Busca o arquivo JSON que o seu Python gerou
-                const response = await fetch('vitrine.json');
-                const faixas = await response.json();
-                
-                const container = document.getElementById('vitrine-container');
-                container.innerHTML = ''; // Limpa a mensagem de carregamento
+    // Executa o carregamento das músicas
+    carregarVitrine();
 
-                // Para cada faixa no JSON, cria um card com o player do SoundCloud
-                faixas.forEach(faixa => {
-                    const card = `
-                        <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 hover:border-orange-500 transition-colors">
-                            <h2 class="text-xl font-bold mb-1">${faixa.artista}</h2>
-                            <p class="text-gray-400 mb-4 text-sm truncate">${faixa.titulo}</p>
-                            <iframe 
-                                width="100%" 
-                                height="166" 
-                                scrolling="no" 
-                                frameborder="no" 
-                                src="https://w.soundcloud.com/player/?url=${encodeURIComponent(faixa.url)}&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false">
-                            </iframe>
-                        </div>
-                    `;
-                    container.innerHTML += card;
-                });
-            } catch (error) {
-                document.getElementById('vitrine-container').innerHTML = 
-                    '<p class="text-red-500 text-center col-span-full">Erro ao carregar a vitrine. O arquivo vitrine.json já foi gerado?</p>';
-            }
-        }
+    // 2. Lógica do botão de alternância de visualização
+    const btnToggle = document.getElementById('btn-toggle');
+    const container = document.getElementById('container-vitrine');
+    const toggleWrapper = document.getElementById('toggle-wrapper');
 
-        carregarVitrine();
-    </script>
+    btnToggle.addEventListener('click', () => {
+      if (container.classList.contains('flex-col')) {
+        // Transforma em Grid (Múltiplas colunas)
+        container.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-7xl mx-auto w-full px-4';
+        toggleWrapper.className = 'flex justify-end max-w-7xl mx-auto w-full px-4 mb-4';
+      } else {
+        // Volta para o modo Lista (Coluna única e larga)
+        container.className = 'flex flex-col max-w-4xl mx-auto space-y-6 w-full px-4';
+        toggleWrapper.className = 'flex justify-end max-w-4xl mx-auto w-full px-4 mb-4';
+      }
+    });
+  </script>
 </body>
 </html>
