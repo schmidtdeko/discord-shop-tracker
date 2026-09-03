@@ -1,33 +1,35 @@
 import json
+import urllib.request
 from soundcloud import SoundCloud
 
-# Inicializa o cliente da nova biblioteca v2
 client = SoundCloud()
 
-PERFIS = [
-    "https://soundcloud.com/dksoundresearch",
-    "https://soundcloud.com/gabriel-walter-iles",
-    "https://soundcloud.com/leomorini",
-    "https://soundcloud.com/elrafatavares",
-    "https://soundcloud.com/b0nmusiq",
-    "https://soundcloud.com/djschure",
-    "https://soundcloud.com/mosersemh"
-]
+# Cole o link do CSV gerado pelo Google Sheets aqui dentro das aspas
+URL_DA_PLANILHA = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQyWcPc0JYomI3tNYzlfnf3I6GLvCKnVDb38UEpoJfhLnptUc4H5Zxx6Qkx-fb65iEWcRG5HMRxtYgv/pub?output=csv"
 
 def coletar_lancamentos():
     vitrine = []
     
-    for url in PERFIS:
+    try:
+        print("Lendo artistas da planilha do Google...")
+        resposta = urllib.request.urlopen(URL_DA_PLANILHA)
+        linhas = resposta.read().decode('utf-8').splitlines()
+        
+        # Pega só as linhas que realmente são links do SoundCloud
+        perfis = [linha.strip() for linha in linhas if "soundcloud.com" in linha]
+        print(f"Encontrados {len(perfis)} perfis na planilha.")
+    except Exception as e:
+        print(f"Erro ao ler a planilha: {e}")
+        return
+
+    for url in perfis:
         try:
             print(f"Buscando: {url}")
-            # Resolve a URL do perfil para pegar o ID interno do usuário
             user = client.resolve(url)
             
-            # Busca a faixa mais recente usando o ID do usuário
             tracks = client.get_user_tracks(user.id, limit=1)
             
             for track in tracks:
-                # Trata a data de criação
                 data_formatada = track.created_at.strftime("%Y-%m-%d") if track.created_at else "1970-01-01"
                 
                 vitrine.append({
@@ -41,7 +43,6 @@ def coletar_lancamentos():
         except Exception as e:
             print(f"Erro ao processar {url}: {e}")
 
-    # Ordena da música mais nova para a mais antiga
     vitrine_ordenada = sorted(vitrine, key=lambda x: x["data"], reverse=True)
 
     with open("vitrine.json", "w", encoding="utf-8") as f:
