@@ -1,5 +1,5 @@
 import json
-from soundcloud import Soundcloud
+from soundcloud import SoundCloud
 
 # Inicializa o cliente da nova biblioteca v2
 client = Soundcloud()
