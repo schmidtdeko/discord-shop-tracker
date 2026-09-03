@@ -1,8 +1,8 @@
 import json
-from sclib import SoundcloudAPI
+from soundcloud import Soundcloud
 
-# Inicializa a API não oficial
-api = SoundcloudAPI()
+# Inicializa o cliente da nova biblioteca
+client = Soundcloud()
 
 PERFIS = [
     "https://soundcloud.com/dksoundresearch",
@@ -20,24 +20,26 @@ def coletar_lancamentos():
     for url in PERFIS:
         try:
             print(f"Buscando: {url}")
-            # Resolve a URL do perfil para um objeto de Usuário
-            usuario = api.resolve(url)
+            # Resolve a URL do perfil para pegar o ID numérico do usuário
+            user = client.resolve(url)
             
-            # Pega as 3 faixas mais recentes (evita lotar o front)
-            faixas = list(usuario.get_tracks(limit=3))
+            # Busca as 3 faixas mais recentes usando o ID
+            tracks = client.get_user_tracks(user.id, limit=3)
             
-            for faixa in faixas:
+            for track in tracks:
+                # Formata a data (a API retorna um objeto datetime)
+                data_formatada = track.created_at.strftime("%Y-%m-%d") if track.created_at else "1970-01-01"
+                
                 vitrine.append({
-                    "artista": usuario.username,
-                    "titulo": faixa.title,
-                    "url": faixa.permalink_url,
-                    "capa": faixa.artwork_url,
-                    "data": faixa.created_at.strftime("%Y-%m-%d")
+                    "artista": user.username,
+                    "titulo": track.title,
+                    "url": track.permalink_url,
+                    "capa": track.artwork_url or "",
+                    "data": data_formatada
                 })
         except Exception as e:
             print(f"Erro ao processar {url}: {e}")
 
-    # Ordena tudo da faixa mais nova para a mais antiga
     vitrine_ordenada = sorted(vitrine, key=lambda x: x["data"], reverse=True)
 
     with open("vitrine.json", "w", encoding="utf-8") as f:
