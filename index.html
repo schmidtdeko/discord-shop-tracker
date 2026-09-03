@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DK & Friends - Radar</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-5xl mx-auto">
+        <h1 class="text-4xl font-bold text-center mb-2 text-orange-500">Radar Minimal & Afro-Tech</h1>
+        <p class="text-center text-gray-400 mb-8">Últimos lançamentos da crew.</p>
+        
+        <div id="vitrine-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <p class="text-center text-gray-500 col-span-full">Carregando os graves...</p>
+        </div>
+    </div>
+
+    <script>
+        async function carregarVitrine() {
+            try {
+                // Busca o arquivo JSON que o seu Python gerou
+                const response = await fetch('vitrine.json');
+                const faixas = await response.json();
+                
+                const container = document.getElementById('vitrine-container');
+                container.innerHTML = ''; // Limpa a mensagem de carregamento
+
+                // Para cada faixa no JSON, cria um card com o player do SoundCloud
+                faixas.forEach(faixa => {
+                    const card = `
+                        <div class="bg-gray-800 p-4 rounded-xl shadow-lg border border-gray-700 hover:border-orange-500 transition-colors">
+                            <h2 class="text-xl font-bold mb-1">${faixa.artista}</h2>
+                            <p class="text-gray-400 mb-4 text-sm truncate">${faixa.titulo}</p>
+                            <iframe 
+                                width="100%" 
+                                height="166" 
+                                scrolling="no" 
+                                frameborder="no" 
+                                src="https://w.soundcloud.com/player/?url=${encodeURIComponent(faixa.url)}&color=%23ff5500&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false">
+                            </iframe>
+                        </div>
+                    `;
+                    container.innerHTML += card;
+                });
+            } catch (error) {
+                document.getElementById('vitrine-container').innerHTML = 
+                    '<p class="text-red-500 text-center col-span-full">Erro ao carregar a vitrine. O arquivo vitrine.json já foi gerado?</p>';
+            }
+        }
+
+        carregarVitrine();
+    </script>
+</body>
+</html>
