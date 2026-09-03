@@ -2,7 +2,7 @@ import json
 from soundcloud.client import SoundCloud
 
 # Inicializa o cliente da nova biblioteca
-client = Soundcloud()
+client = SoundCloud()
 
 PERFIS = [
     "https://soundcloud.com/dksoundresearch",
