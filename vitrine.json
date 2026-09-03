@@ -1,1 +1,51 @@
-[]
+[
+  {
+    "artista": "DK Sound Research",
+    "titulo": "Último Lançamento ou Set",
+    "url": "https://soundcloud.com/dksoundresearch",
+    "capa": "https://ui-avatars.com/api/?name=DK+Sound+Research&background=1f2937&color=f97316&size=500",
+    "data": "2026-09-03"
+  },
+  {
+    "artista": "Gabriel Walter Iles",
+    "titulo": "Último Lançamento ou Set",
+    "url": "https://soundcloud.com/gabriel-walter-iles",
+    "capa": "https://ui-avatars.com/api/?name=Gabriel+Walter+Iles&background=1f2937&color=f97316&size=500",
+    "data": "2026-09-01"
+  },
+  {
+    "artista": "Leo Morini",
+    "titulo": "Último Lançamento ou Set",
+    "url": "https://soundcloud.com/leomorini",
+    "capa": "https://ui-avatars.com/api/?name=Leo+Morini&background=1f2937&color=f97316&size=500",
+    "data": "2026-08-30"
+  },
+  {
+    "artista": "El Rafa Tavares",
+    "titulo": "Último Lançamento ou Set",
+    "url": "https://soundcloud.com/elrafatavares",
+    "capa": "https://ui-avatars.com/api/?name=El+Rafa+Tavares&background=1f2937&color=f97316&size=500",
+    "data": "2026-08-28"
+  },
+  {
+    "artista": "B0N Musiq",
+    "titulo": "Último Lançamento ou Set",
+    "url": "https://soundcloud.com/b0nmusiq",
+    "capa": "https://ui-avatars.com/api/?name=B0N+Musiq&background=1f2937&color=f97316&size=500",
+    "data": "2026-08-26"
+  },
+  {
+    "artista": "DJ Schure",
+    "titulo": "Último Lançamento ou Set",
+    "url": "https://soundcloud.com/djschure",
+    "capa": "https://ui-avatars.com/api/?name=DJ+Schure&background=1f2937&color=f97316&size=500",
+    "data": "2026-08-24"
+  },
+  {
+    "artista": "Moser",
+    "titulo": "Último Lançamento ou Set",
+    "url": "https://soundcloud.com/mosersemh",
+    "capa": "https://ui-avatars.com/api/?name=Moser&background=1f2937&color=f97316&size=500",
+    "data": "2026-08-22"
+  }
+]
