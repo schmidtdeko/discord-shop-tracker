@@ -7,8 +7,16 @@
 <meta name="description" content="Os lançamentos mais recentes dos produtores e DJs de Blumenau e região. Atualizado todo dia, direto do SoundCloud.">
 <meta name="theme-color" content="#0a0a0c">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="Vitrine Local">
+<meta property="og:url" content="https://schmidtdeko.github.io/lancamentos/">
 <meta property="og:title" content="Vitrine Local — lançamentos da crew de Blumenau e região">
 <meta property="og:description" content="Os lançamentos mais recentes dos produtores e DJs de Blumenau e região. Atualizado todo dia.">
+<!-- URL absoluta: o WhatsApp e o Facebook não resolvem caminho relativo aqui -->
+<meta property="og:image" content="https://schmidtdeko.github.io/lancamentos/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Vitrine Local — produção e DJs de Blumenau e região">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎧</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -205,10 +213,24 @@
   .art{position:relative;aspect-ratio:1;background:#16161d;overflow:hidden}
   .art img{width:100%;height:100%;object-fit:cover;transition:transform .5s var(--ease),filter .3s}
   .card:hover .art img{transform:scale(1.05)}
+  /* Faixa sem capa no SoundCloud: sem isto o card fica preto e parece
+     defeito, o que deprecia o trabalho do artista. Aqui vira uma capa
+     genérica com a inicial dele. */
   .art-fallback{
-    position:absolute;inset:0;display:grid;place-items:center;
-    font-size:2.6rem;font-weight:900;color:rgba(255,255,255,.24);
-    background:linear-gradient(150deg,#1d1d27,#26161f);
+    position:absolute;inset:0;display:grid;place-items:center;gap:6px;
+    align-content:center;text-align:center;padding:12px;
+    background:
+      radial-gradient(120% 90% at 30% 10%, rgba(255,106,19,.30), transparent 60%),
+      radial-gradient(110% 90% at 80% 90%, rgba(255,45,126,.24), transparent 62%),
+      #191922;
+  }
+  .art-fallback b{
+    font-size:3.1rem;font-weight:900;line-height:1;letter-spacing:-.04em;
+    color:rgba(255,255,255,.92);text-shadow:0 2px 14px rgba(0,0,0,.5);
+  }
+  .art-fallback i{
+    font-style:normal;font-size:10px;font-weight:800;letter-spacing:.16em;
+    text-transform:uppercase;color:rgba(255,255,255,.55);
   }
   .play{
     position:absolute;inset:0;width:100%;border:none;background:none;cursor:pointer;
@@ -234,10 +256,26 @@
     margin:0;font-size:14.5px;font-weight:700;line-height:1.35;
     display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
   }
-  .card-artist{
-    margin:7px 0 0;font-size:12.5px;font-weight:700;color:#ffb083;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  .artista{display:flex;align-items:center;gap:8px;margin:9px 0 0;min-width:0}
+  .avatar{
+    width:24px;height:24px;border-radius:50%;flex:0 0 auto;object-fit:cover;
+    background:#22222c;border:1px solid var(--line-2);
   }
+  .avatar-vazio{
+    display:grid;place-items:center;font-size:11px;font-weight:900;
+    color:rgba(255,255,255,.5);background:linear-gradient(150deg,#1d1d27,#26161f);
+  }
+  .artista-nome{
+    font-size:12.5px;font-weight:700;color:#ffb083;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    border-bottom:1px solid transparent;transition:color .16s,border-color .16s;
+  }
+  a.artista-nome:hover{color:#ffd0b3;border-color:currentColor}
+
+  .feature-body .artista{margin:14px 0 0;gap:11px}
+  .feature-body .avatar{width:40px;height:40px}
+  .feature-body .avatar-vazio{font-size:17px}
+  .feature-body .artista-nome{font-size:1.05rem;white-space:normal}
   .card-date{margin:3px 0 0;font-size:11.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-2)}
   .card-link{
     display:inline-block;margin-top:11px;font-size:12px;font-weight:700;
@@ -422,6 +460,9 @@
   </div>
 </footer>
 
+<!-- Widget API do SoundCloud: só serve pra saber quando a faixa terminou e
+     emendar na próxima. Se não carregar, a página funciona igual. -->
+<script src="https://w.soundcloud.com/player/api.js"></script>
 <script>
 (function () {
   'use strict';
@@ -459,6 +500,7 @@
   // ============================================================
 
   var items = [];
+  var emFoco = [];    // a lista exatamente como está renderizada na grade
   var nArtistas = 0;
   var view = 'grid';
   var playing = null; // card com player aberto
@@ -471,10 +513,13 @@
     });
   }
 
-  // SoundCloud entrega a capa em 100px; -t500x500 devolve a versão grande
-  function capa(u) {
+  /* O SoundCloud entrega a capa em 100px (-large) e serve outros tamanhos
+     trocando o sufixo. A grade exibe ~215px, então pedir 500 era baixar 5x
+     mais pixel do que aparece — pesado pra quem abre no 4G. A grade usa 300;
+     o destaque não usa img nenhuma, é o player visual do SoundCloud. */
+  function capa(u, tamanho) {
     if (!u) return '';
-    return u.replace(/-(large|t300x300)\.(jpg|jpeg|png)/i, '-t500x500.$2');
+    return u.replace(/-(large|t300x300|t500x500)\.(jpg|jpeg|png)/i, '-' + (tamanho || 't300x300') + '.$2');
   }
 
   function parseData(s) {
@@ -522,6 +567,30 @@
     playing = null;
   }
 
+  /* Emenda na próxima faixa quando a atual termina, seguindo a ordem do
+     rodízio — então quem dá play atravessa artistas diferentes em vez de
+     ouvir um e ir embora. Se a Widget API não carregar, o player só para no
+     fim, como antes: nada quebra. */
+  function emendarProxima(frame, card) {
+    if (!window.SC || !SC.Widget) return;
+    try {
+      var widget = SC.Widget(frame);
+      widget.bind(SC.Widget.Events.FINISH, function () {
+        var proximo = card.nextElementSibling;
+        while (proximo && !proximo.classList.contains('card')) {
+          proximo = proximo.nextElementSibling;
+        }
+        if (!proximo) return;
+        var i = +proximo.dataset.i;
+        if (isNaN(i) || !emFoco[i]) return;
+        tocar(proximo, emFoco[i].url);
+        proximo.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      });
+    } catch (e) {
+      console.warn('Widget API indisponível, sem playback contínuo:', e);
+    }
+  }
+
   function tocar(card, url) {
     var art = card.querySelector('.art');
     if (!art || art.querySelector('iframe')) return;
@@ -529,13 +598,30 @@
     var frame = document.createElement('iframe');
     frame.title = 'Player do SoundCloud';
     frame.allow = 'autoplay';
-    frame.loading = 'lazy';
     frame.setAttribute('scrolling', 'no');
     frame.src = player(url, view === 'grid');
     art.appendChild(frame);
     var btn = art.querySelector('.play');
     if (btn) btn.hidden = true;
     playing = card;
+    emendarProxima(frame, card);
+  }
+
+  /* Selo do artista: foto do perfil + nome clicável. É o que faz a vitrine
+     parecer um mostruário de gente em vez de uma lista de arquivos. */
+  function seloArtista(it) {
+    var inicial = esc((it.artista || '?').trim().charAt(0).toUpperCase());
+    var foto = it.avatar
+      ? '<img class="avatar" src="' + esc(it.avatar) + '" alt="" loading="lazy" decoding="async">'
+      : '<span class="avatar avatar-vazio" aria-hidden="true">' + inicial + '</span>';
+
+    var nome = esc(it.artista);
+    var corpo = it.perfil
+      ? '<a class="artista-nome" href="' + esc(it.perfil) + '" target="_blank" rel="noopener" ' +
+        'title="Ver ' + nome + ' no SoundCloud">' + nome + '</a>'
+      : '<span class="artista-nome">' + nome + '</span>';
+
+    return '<div class="artista">' + foto + corpo + '</div>';
   }
 
   function blocoArte(it) {
@@ -543,7 +629,8 @@
     var inicial = esc((it.artista || '?').trim().charAt(0).toUpperCase());
     var visual = img
       ? '<img src="' + esc(img) + '" alt="Capa de ' + esc(it.titulo) + '" loading="lazy" decoding="async">'
-      : '<div class="art-fallback" aria-hidden="true">' + inicial + '</div>';
+      : '<div class="art-fallback" aria-hidden="true"><b>' + inicial + '</b>' +
+        '<i>' + esc(it.artista) + '</i></div>';
     return '<div class="art">' + visual +
       '<button type="button" class="play" aria-label="Tocar ' + esc(it.titulo) + ' de ' + esc(it.artista) + '">' +
         '<span class="play-icon" aria-hidden="true">' +
@@ -634,13 +721,14 @@
       return;
     }
 
+    emFoco = lista;
     grid.className = 'grid' + (view === 'list' ? ' list' : '');
     grid.innerHTML = lista.map(function (it, i) {
       return '<article class="card" data-i="' + i + '">' +
         blocoArte(it) +
         '<div class="card-body">' +
           '<h3 class="card-title">' + esc(it.titulo) + '</h3>' +
-          '<p class="card-artist">' + esc(it.artista) + '</p>' +
+          seloArtista(it) +
           '<p class="card-date">' + esc(quandoFoi(it._d)) + '</p>' +
           '<a class="card-link" href="' + esc(it.url) + '" target="_blank" rel="noopener">Abrir no SoundCloud ↗</a>' +
         '</div>' +
@@ -703,7 +791,7 @@
       '<div class="feature-body">' +
         '<span class="badge">' + esc(escolha.rotulo) + '</span>' +
         '<h3>' + esc(alvo.titulo) + '</h3>' +
-        '<p class="feature-artist">' + esc(alvo.artista) + '</p>' +
+        seloArtista(alvo) +
         '<p class="feature-meta">' + esc(dataCurta(alvo._d)) + ' · ' + esc(quandoFoi(alvo._d)) + '</p>' +
         '<div class="feature-actions">' +
           '<a class="btn btn-primary" href="' + esc(alvo.url) + '" target="_blank" rel="noopener">Ouvir no SoundCloud</a>' +
