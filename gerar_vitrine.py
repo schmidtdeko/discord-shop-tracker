@@ -41,10 +41,24 @@ FAIXAS_POR_ARTISTA = 5
 PAGINA_SOUNDCLOUD = 50
 
 
+def limpar_url(url):
+    """Devolve uma URL de perfil que o resolve() aceite.
+
+    O resolve() do SoundCloud EXIGE o esquema: 'soundcloud.com/artista'
+    devolve None em silencio, so 'https://soundcloud.com/artista' funciona.
+    E quem preenche formulario cola sem https, com www., com m. de mobile e
+    com parametro de rastreio na cola.
+    """
+    u = url.strip().strip('<>"\'')
+    u = u.split("?")[0].split("#")[0].rstrip("/")
+    u = re.sub(r"^https?://", "", u, flags=re.I)
+    u = re.sub(r"^(www\.|m\.|mobile\.)", "", u, flags=re.I)
+    return "https://" + u
+
+
 def normalizar(url):
     """Chave de comparacao, pra nao repetir o mesmo perfil vindo de duas fontes."""
-    u = url.strip().split("?")[0].split("#")[0].rstrip("/").lower()
-    return re.sub(r"^https?://(www\.)?", "", u)
+    return re.sub(r"^https://", "", limpar_url(url).lower())
 
 
 def extrair_url(linha):
@@ -65,10 +79,17 @@ def perfis_da_planilha():
     linhas = resposta.read().decode("utf-8").splitlines()
 
     achados = []
-    for linha in csv.reader(linhas):
+    for i, linha in enumerate(csv.reader(linhas)):
+        if i == 0:
+            continue  # cabecalho da planilha de respostas
+
         url = extrair_url(linha)
         if url:
             achados.append(url)
+        elif any(c.strip() for c in linha):
+            # Inscricao preenchida sem link reconhecivel: avisa em vez de
+            # descartar calado, pra dar pra falar com a pessoa.
+            aviso("Inscricao sem link do SoundCloud", " | ".join(linha))
     return achados
 
 
@@ -93,10 +114,11 @@ def carregar_perfis():
 
         novos = 0
         for url in achados:
-            chave = normalizar(url)
+            limpa = limpar_url(url)
+            chave = normalizar(limpa)
             if chave and chave not in vistos:
                 vistos.add(chave)
-                perfis.append(url)
+                perfis.append(limpa)
                 novos += 1
         print(f"{origem}: {len(achados)} linhas com soundcloud.com, {novos} perfis novos.")
 
