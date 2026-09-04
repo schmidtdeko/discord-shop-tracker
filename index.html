@@ -448,7 +448,9 @@
 
   // Teto de faixas por artista na vitrine justa. Quem tem 17 upload não ocupa
   // 17 vagas. 0 desliga o teto (aí todo mundo aparece inteiro, só intercalado).
-  var MAX_POR_ARTISTA = 4;
+  // Casado com o FAIXAS_POR_ARTISTA do gerador: hoje nada é escondido, mas se
+  // a coleta voltar desequilibrada a página continua justa por conta própria.
+  var MAX_POR_ARTISTA = 5;
 
   // Quantos artistas entram no rodízio do destaque. O destaque muda de dono
   // todo dia, um artista por vez, então ninguém fica fixo no topo da página.
