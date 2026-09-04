@@ -2,7 +2,9 @@ name: Atualizar Vitrine SoundCloud
 
 on:
   schedule:
-    - cron: '0 12 * * *' # Roda todo dia ao meio-dia
+    # 12:00 UTC = 09:00 no horario de Brasilia. O GitHub atrasa cron do plano
+    # gratuito com frequencia, entao trate o horario como aproximado.
+    - cron: '0 12 * * *'
   workflow_dispatch:
 
 jobs:
@@ -12,20 +14,30 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      
+
       - name: Instalar Python e Dependências
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
       - run: pip install soundcloud-v2
-      
+
       - name: Gerar JSON da Vitrine
         run: python gerar_vitrine.py
-        
+
       - name: Salvar alterações no repositório
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add vitrine.json
-          git commit -m "update: novos lançamentos na vitrine" || exit 0
+
+          # "Nada mudou" e sucesso legitimo (ninguem lancou faixa nova hoje) e
+          # nao pode ser confundido com falha. Antes isso era um `|| exit 0`
+          # depois do commit, que engolia TAMBEM erro de commit e de push e
+          # deixava o Action verde com a vitrine congelada.
+          if git diff --cached --quiet; then
+            echo "Nenhum lançamento novo hoje: vitrine já está atualizada."
+            exit 0
+          fi
+
+          git commit -m "update: novos lançamentos na vitrine"
           git push
