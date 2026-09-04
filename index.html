@@ -574,6 +574,15 @@
       ordem.forEach(function (a) { grupos[a] = grupos[a].slice(0, teto); });
     }
 
+    /* Sem isto a ordem das rodadas seria sempre "quem lançou mais recente
+       primeiro", e o card nº 1 ficaria travado no mesmo artista até alguém
+       soltar faixa nova. Girando pelo dia do ano, a primeira posição circula
+       entre todos — mesma lógica do destaque. */
+    if (ordem.length > 1) {
+      var giro = diaDoAno() % ordem.length;
+      ordem = ordem.slice(giro).concat(ordem.slice(0, giro));
+    }
+
     var saida = [];
     var rodada = 0;
     var sobrou = true;
