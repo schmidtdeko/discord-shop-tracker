@@ -20,8 +20,14 @@ ARQUIVO_BASE = "artistas.txt"
 SAIDA = "vitrine.json"
 
 # Mesmo numero de vagas para todo mundo: quem sobe mais musica nao ganha
-# mais espaco na vitrine por isso.
+# mais espaco na vitrine por isso. 0 desliga o teto.
 FAIXAS_POR_ARTISTA = 5
+
+# Tamanho de pagina da API do SoundCloud. ATENCAO: o `limit` do
+# get_user_tracks NAO limita o total - ele e o tamanho da pagina, e o
+# gerador pagina o perfil inteiro. Quem corta de verdade e o
+# FAIXAS_POR_ARTISTA, aplicado depois de ordenar por data.
+PAGINA_SOUNDCLOUD = 50
 
 
 def normalizar(url):
@@ -97,19 +103,30 @@ def coletar_lancamentos():
         try:
             print(f"Buscando: {url}")
             user = client.resolve(url)
-            tracks = client.get_user_tracks(user.id, limit=FAIXAS_POR_ARTISTA)
 
-            for track in tracks:
-                data_formatada = track.created_at.strftime("%Y-%m-%d") if track.created_at else "1970-01-01"
-                vitrine.append({
+            faixas = []
+            for track in client.get_user_tracks(user.id, limit=PAGINA_SOUNDCLOUD):
+                faixas.append({
                     "artista": user.username,
                     "titulo": track.title,
                     "url": track.permalink_url,
                     "capa": track.artwork_url or "",
-                    "data": data_formatada,
+                    "data": track.created_at.strftime("%Y-%m-%d") if track.created_at else "1970-01-01",
                 })
         except Exception as e:
             print(f"Erro ao processar {url}: {e}")
+            continue
+
+        # A API nao devolve as faixas em ordem cronologica, entao ordena antes
+        # de cortar - senao as vagas do artista sao preenchidas com faixas
+        # aleatorias do perfil em vez das mais recentes.
+        faixas.sort(key=lambda f: f["data"], reverse=True)
+        if FAIXAS_POR_ARTISTA > 0:
+            achadas = len(faixas)
+            faixas = faixas[:FAIXAS_POR_ARTISTA]
+            print(f"  {user.username}: {achadas} no perfil, {len(faixas)} na vitrine")
+
+        vitrine.extend(faixas)
 
     # Nunca sobrescreve a vitrine com lista vazia (SoundCloud fora do ar, por exemplo).
     if not vitrine:
