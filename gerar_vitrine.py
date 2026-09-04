@@ -143,6 +143,11 @@ def coletar_lancamentos():
             for track in client.get_user_tracks(user.id, limit=PAGINA_SOUNDCLOUD):
                 faixas.append({
                     "artista": user.username,
+                    # avatar e perfil vem na MESMA resposta do resolve(), sem
+                    # requisicao extra - e o que deixa a vitrine mostrar gente
+                    # em vez de so nome de arquivo.
+                    "avatar": user.avatar_url or "",
+                    "perfil": user.permalink_url or "",
                     "titulo": track.title,
                     "url": track.permalink_url,
                     "capa": track.artwork_url or "",
