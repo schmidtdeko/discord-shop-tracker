@@ -2,6 +2,7 @@ import csv
 import json
 import os
 import re
+import sys
 import urllib.request
 
 from soundcloud import SoundCloud
@@ -18,6 +19,16 @@ URL_DA_PLANILHA = f"https://docs.google.com/spreadsheets/d/{PLANILHA_ID}/export?
 ARQUIVO_BASE = "artistas.txt"
 
 SAIDA = "vitrine.json"
+
+
+def aviso(titulo, texto):
+    """Annotation de aviso: aparece no resumo da execucao no GitHub Actions."""
+    print(f"::warning title={titulo}::{texto}")
+
+
+def erro(texto):
+    """Annotation de erro: destaca a linha no resumo da execucao."""
+    print(f"::error::{texto}")
 
 # Mesmo numero de vagas para todo mundo: quem sobe mais musica nao ganha
 # mais espaco na vitrine por isso. 0 desliga o teto.
@@ -77,7 +88,7 @@ def carregar_perfis():
         try:
             achados = captador()
         except Exception as e:
-            print(f"Erro ao ler os perfis do {origem}: {e}")
+            aviso(f"Fonte de perfis indisponivel: {origem}", str(e))
             continue
 
         novos = 0
@@ -95,10 +106,12 @@ def carregar_perfis():
 def coletar_lancamentos():
     perfis = carregar_perfis()
     if not perfis:
-        print("Nenhum perfil para consultar. Mantendo o vitrine.json atual.")
-        return
+        erro("Nenhum perfil para consultar: o artistas.txt e a planilha falharam os dois. "
+             "O vitrine.json atual foi mantido.")
+        sys.exit(1)
 
     vitrine = []
+    falhas = []
     for url in perfis:
         try:
             print(f"Buscando: {url}")
@@ -114,7 +127,10 @@ def coletar_lancamentos():
                     "data": track.created_at.strftime("%Y-%m-%d") if track.created_at else "1970-01-01",
                 })
         except Exception as e:
-            print(f"Erro ao processar {url}: {e}")
+            # Um perfil ruim (link errado no formulario, conta apagada) nao pode
+            # derrubar a vitrine dos outros: vira aviso visivel e o fluxo segue.
+            falhas.append(url)
+            aviso("Perfil ignorado", f"{url} -> {e}")
             continue
 
         # A API nao devolve as faixas em ordem cronologica, entao ordena antes
@@ -128,10 +144,13 @@ def coletar_lancamentos():
 
         vitrine.extend(faixas)
 
-    # Nunca sobrescreve a vitrine com lista vazia (SoundCloud fora do ar, por exemplo).
+    # Nunca sobrescreve a vitrine com lista vazia (SoundCloud fora do ar, ou a
+    # soundcloud-v2 quebrada porque a API nao oficial mudou). Aqui falha de
+    # proposito: o vitrine.json antigo continua no ar e o GitHub manda e-mail.
     if not vitrine:
-        print("Nenhuma faixa coletada. Mantendo o vitrine.json atual.")
-        return
+        erro(f"Nenhuma faixa coletada de {len(perfis)} perfis. A API do SoundCloud pode ter "
+             "mudado (soundcloud-v2 desatualizada). O vitrine.json atual foi mantido.")
+        sys.exit(1)
 
     vitrine.sort(key=lambda x: x["data"], reverse=True)
 
@@ -145,6 +164,12 @@ def coletar_lancamentos():
     print(f"{len(vitrine)} faixas de {len(por_artista)} artistas gravadas em {SAIDA}.")
     for artista, quantas in sorted(por_artista.items(), key=lambda kv: -kv[1]):
         print(f"  {quantas:>2}x {artista}")
+
+    if falhas:
+        aviso(
+            f"{len(falhas)} de {len(perfis)} perfis nao entraram",
+            "Confira se o link esta certo ou se a conta ainda existe: " + ", ".join(falhas),
+        )
 
 
 if __name__ == "__main__":
