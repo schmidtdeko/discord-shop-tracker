@@ -1,8 +1,10 @@
 {
-  "atualizado_em": "2026-09-04T15:37:51Z",
+  "atualizado_em": "2026-09-05T13:24:17Z",
   "faixas": 46,
   "artistas": 11,
-  "perfis_consultados": 11,
-  "perfis_com_falha": [],
+  "perfis_consultados": 12,
+  "perfis_com_falha": [
+    "https://on.soundcloud.com/wykSWW6fnk6atlFCT0"
+  ],
   "faixas_por_artista": 5
 }
